@@ -15,24 +15,15 @@ const USE_DB = process.env.DATABASE_URL &&
 
 let db;
 if (USE_DB) {
+  // ponytail: max:1 + sin idle timeout — configuración óptima para serverless/Vercel
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    max: 1,
+    idleTimeoutMillis: 0,
+    connectionTimeoutMillis: 10000
   });
   db = (sql, p) => pool.query(sql, p);
-  pool.query(`
-    CREATE TABLE IF NOT EXISTS centers (
-      id SERIAL PRIMARY KEY, pais TEXT NOT NULL, nombre TEXT NOT NULL,
-      ciudad TEXT DEFAULT '', direccion TEXT DEFAULT '', acepta TEXT DEFAULT '',
-      contacto TEXT DEFAULT '', web TEXT, horario TEXT, maps_link TEXT,
-      lat DOUBLE PRECISION, lng DOUBLE PRECISION
-    );
-    CREATE TABLE IF NOT EXISTS submissions (
-      id BIGINT PRIMARY KEY, pais TEXT, nombre TEXT, ciudad TEXT DEFAULT '',
-      direccion TEXT DEFAULT '', acepta TEXT DEFAULT '', contacto TEXT DEFAULT '',
-      fecha TIMESTAMPTZ DEFAULT NOW()
-    );
-  `).catch(e => console.error('DB init:', e.message));
   console.log('🗄  Modo: Postgres');
 } else {
   // Fallback JSON para desarrollo local
@@ -144,20 +135,30 @@ async function coordsFromLink(url) {
 // ── Public API ───────────────────────────────────────────────────
 
 app.get('/api/centers', async (req, res) => {
-  const { rows } = await db('SELECT * FROM centers ORDER BY id');
-  res.json(rows);
+  try {
+    const { rows } = await db('SELECT * FROM centers ORDER BY id');
+    res.json(rows);
+  } catch (e) {
+    console.error('GET /api/centers:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/submit', async (req, res) => {
   const { pais, nombre, ciudad, direccion, acepta, contacto } = req.body;
   if (!pais || !nombre || !ciudad)
     return res.status(400).json({ error: 'Faltan campos requeridos.' });
-  await db(
-    'INSERT INTO submissions(id,pais,nombre,ciudad,direccion,acepta,contacto) VALUES($1,$2,$3,$4,$5,$6,$7)',
-    [Date.now(), pais.trim(), nombre.trim(), ciudad.trim(),
-     (direccion||'').trim(), (acepta||'').trim(), (contacto||'').trim()]
-  );
-  res.json({ ok: true });
+  try {
+    await db(
+      'INSERT INTO submissions(id,pais,nombre,ciudad,direccion,acepta,contacto) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [Date.now(), pais.trim(), nombre.trim(), ciudad.trim(),
+       (direccion||'').trim(), (acepta||'').trim(), (contacto||'').trim()]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('POST /api/submit:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── Admin auth ───────────────────────────────────────────────────
@@ -199,24 +200,33 @@ app.get('/admin/api/data', auth, async (req, res) => {
 });
 
 app.post('/admin/api/approve/:id', auth, async (req, res) => {
-  const id = Number(req.params.id);
-  const { rows } = await db('SELECT * FROM submissions WHERE id=$1', [id]);
-  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
-  const s = rows[0];
-  const { lat, lng } = await coordsFromLink(s.maps_link);
-  const { rows: cs } = await db('SELECT MAX(id) as m FROM centers');
-  const newId = (cs[0].m || 0) + 1;
-  await db(
-    'INSERT INTO centers(id,pais,nombre,ciudad,direccion,acepta,contacto,lat,lng) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-    [newId, s.pais, s.nombre, s.ciudad, s.direccion, s.acepta, s.contacto, lat, lng]
-  );
-  await db('DELETE FROM submissions WHERE id=$1', [id]);
-  res.json({ ok: true });
+  try {
+    const id = Number(req.params.id);
+    const { rows } = await db('SELECT * FROM submissions WHERE id=$1', [id]);
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+    const s = rows[0];
+    const { lat, lng } = await coordsFromLink(s.maps_link);
+    const { rows: cs } = await db('SELECT MAX(id) as m FROM centers');
+    const newId = (cs[0].m || 0) + 1;
+    await db(
+      'INSERT INTO centers(id,pais,nombre,ciudad,direccion,acepta,contacto,lat,lng) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [newId, s.pais, s.nombre, s.ciudad, s.direccion, s.acepta, s.contacto, lat, lng]
+    );
+    await db('DELETE FROM submissions WHERE id=$1', [id]);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('approve:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/admin/api/reject/:id', auth, async (req, res) => {
-  await db('DELETE FROM submissions WHERE id=$1', [Number(req.params.id)]);
-  res.json({ ok: true });
+  try {
+    await db('DELETE FROM submissions WHERE id=$1', [Number(req.params.id)]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/admin/api/center', auth, async (req, res) => {
