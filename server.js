@@ -186,11 +186,16 @@ app.get('/admin', auth, (req, res) =>
   res.sendFile(path.join(__dirname, 'admin.html')));
 
 app.get('/admin/api/data', auth, async (req, res) => {
-  const [s, c] = await Promise.all([
-    db('SELECT * FROM submissions ORDER BY fecha DESC'),
-    db('SELECT * FROM centers ORDER BY id')
-  ]);
-  res.json({ submissions: s.rows, centers: c.rows });
+  try {
+    const [s, c] = await Promise.all([
+      db('SELECT * FROM submissions ORDER BY fecha DESC'),
+      db('SELECT * FROM centers ORDER BY id')
+    ]);
+    res.json({ submissions: s.rows, centers: c.rows });
+  } catch (e) {
+    console.error('admin/api/data error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/admin/api/approve/:id', auth, async (req, res) => {
