@@ -1,9 +1,11 @@
 {
   "version": 2,
+  "analytics": { "id": "auto" },
   "builds": [
     { "src": "server.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/_vercel/insights/(.*)", "dest": "/_vercel/insights/$1" },
     { "src": "/(.*)", "dest": "/server.js" }
   ]
 }
