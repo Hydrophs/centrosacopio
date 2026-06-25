@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centros de Acopio — Venezuela</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul: #002D6E;
+      --amarillo: #CF8B00;
+      --bg: #f5f5f0;
+      --card: #fff;
+      --muted: #666;
+    }
+
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: #1a1a1a; line-height: 1.6; }
+
+    /* ── Header ── */
+    header {
+      background: var(--azul);
+      color: #fff;
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+      border-bottom: 5px solid var(--amarillo);
+    }
+    .bandera { display: flex; justify-content: center; gap: 6px; margin-bottom: .8rem; }
+    .bandera span { display: block; height: 8px; width: 60px; border-radius: 2px; }
+    header h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; }
+    header p { margin-top: .4rem; font-size: .95rem; color: #c8d8ff; max-width: 560px; margin-inline: auto; }
+    .aviso {
+      display: inline-block; margin-top: .8rem;
+      background: var(--amarillo); color: #000;
+      font-size: .72rem; font-weight: 700; padding: .25rem .8rem;
+      border-radius: 20px; letter-spacing: .5px; text-transform: uppercase;
+    }
+
+    /* ── Mapa ── */
+    #map { height: 260px; width: 100%; z-index: 0; }
+    @media (max-width: 600px) { #map { height: 200px; } }
+
+    /* Popup Leaflet */
+    .popup-nombre { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+    .popup-meta   { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
+    .popup-acepta { font-size: .78rem; background: #f0f4ff; padding: .4rem .6rem; border-radius: 5px; margin-bottom: .5rem; }
+    .popup-contacto { font-size: .8rem; margin-bottom: .5rem; color: #333; }
+    .btn-maps {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: #1a73e8; color: #fff; text-decoration: none;
+      padding: .4rem .85rem; border-radius: 5px; font-size: .8rem; font-weight: 600;
+    }
+    .btn-maps:hover { background: #1557b0; }
+
+    /* ── Filtros ── */
+    .filtros-wrap { background: var(--azul); padding: .7rem 1.5rem 1rem; }
+    .filtros { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .filtro-tab {
+      background: rgba(255,255,255,.12); color: #fff;
+      border: 1px solid rgba(255,255,255,.22); padding: .35rem 1rem;
+      border-radius: 20px; font-size: .84rem; cursor: pointer;
+      transition: background .15s; white-space: nowrap;
+    }
+    .filtro-tab:hover, .filtro-tab.activo {
+      background: var(--amarillo); color: #000; border-color: var(--amarillo);
+    }
+    .filtro-select {
+      background: rgba(255,255,255,.95); color: #333; border: none;
+      padding: .35rem .85rem; border-radius: 20px; font-size: .83rem;
+      cursor: pointer; outline: none; max-width: 220px;
+    }
+    /* buscador de país en form */
+    .pais-search-wrap { position: relative; }
+    .pais-search-wrap input {
+      width: 100%; padding: .6rem .8rem; border: 1.5px solid #ddd;
+      border-radius: 7px; font-size: .9rem; font-family: inherit; outline: none;
+      transition: border .15s;
+    }
+    .pais-search-wrap input:focus { border-color: var(--azul); }
+    .pais-dropdown {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: #fff; border: 1.5px solid var(--azul); border-top: none;
+      border-radius: 0 0 7px 7px; max-height: 200px; overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    }
+    .pais-dropdown.open { display: block; }
+    .pais-opt {
+      padding: .5rem .8rem; font-size: .88rem; cursor: pointer;
+    }
+    .pais-opt:hover, .pais-opt.hl { background: #f0f4ff; }
+    .pais-opt.hidden { display: none; }
+
+    /* ── Grid ── */
+    main { max-width: 1100px; margin: 1.8rem auto; padding: 0 1.25rem 3rem; }
+    .contador { font-size: .82rem; color: var(--muted); margin-bottom: 1rem; text-align: right; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.2rem; }
+
+    .card {
+      background: var(--card); border-radius: 10px; padding: 1.2rem 1.2rem .9rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08); border-left: 4px solid var(--azul);
+      display: flex; flex-direction: column; gap: .5rem;
+    }
+    .card-pais   { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+    .card h2     { font-size: .97rem; font-weight: 700; line-height: 1.3; }
+    .card .ciudad { font-size: .82rem; color: var(--muted); }
+    .card .direccion { font-size: .82rem; }
+    .card .items {
+      font-size: .78rem; background: #f0f4ff; border-radius: 6px;
+      padding: .45rem .65rem; color: #333;
+    }
+    .card .items strong { display: block; margin-bottom: .15rem; color: var(--azul); }
+    .card .contacto {
+      font-size: .8rem; margin-top: auto; padding-top: .45rem;
+      border-top: 1px solid #eee; color: var(--muted);
+    }
+    .card .contacto a { color: var(--azul); text-decoration: none; }
+    .card .contacto a:hover { text-decoration: underline; }
+    .card .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: .4rem; border-top: 1px solid #eee; gap: .5rem; flex-wrap: wrap;
+    }
+    .card .contacto-wrap { font-size: .8rem; color: var(--muted); flex: 1; min-width: 0; }
+    .card .contacto-wrap a { color: var(--azul); text-decoration: none; }
+    .btn-maps-card {
+      display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap;
+      background: #1a73e8; color: #fff; text-decoration: none;
+      padding: .3rem .7rem; border-radius: 5px; font-size: .75rem; font-weight: 600;
+    }
+    .btn-maps-card:hover { background: #1557b0; }
+
+    .oculto { display: none !important; }
+
+    /* ── Modal proponer ── */
+    .agregar { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #ddd; }
+    .agregar p { color: var(--muted); font-size: .88rem; margin-bottom: .7rem; }
+    .btn-proponer {
+      background: var(--azul); color: #fff; border: none; cursor: pointer;
+      padding: .6rem 1.5rem; border-radius: 6px; font-weight: 600; font-size: .9rem;
+    }
+    .btn-proponer:hover { background: #001f4d; }
+
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 1000;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 12px; padding: 2rem;
+      width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+      position: relative;
+    }
+    .modal-box h2 { font-size: 1.1rem; margin-bottom: 1.2rem; color: var(--azul); }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #999;
+    }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: .8rem; font-weight: 600; color: #444; margin-bottom: .35rem; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: .6rem .8rem; border: 1.5px solid #ddd;
+      border-radius: 7px; font-size: .9rem; font-family: inherit; outline: none;
+      transition: border .15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--azul); }
+    .field textarea { resize: vertical; min-height: 70px; }
+    .btn-submit {
+      width: 100%; padding: .7rem; background: var(--azul); color: #fff;
+      border: none; border-radius: 7px; font-size: .95rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-submit:hover { background: #001f4d; }
+    .btn-submit:disabled { background: #aaa; cursor: default; }
+    .msg-ok { text-align: center; padding: 1rem; color: #1a7f37; font-weight: 600; }
+    .msg-err { color: #c00; font-size: .82rem; margin-top: .5rem; }
+
+    /* ── Footer ── */
+    footer { text-align: center; padding: 1.5rem; font-size: .76rem; color: var(--muted); border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="bandera">
+    <span style="background:#CF8B00"></span>
+    <span style="background:#002D6E"></span>
+    <span style="background:#C8102E"></span>
+  </div>
+  <h1>Centros de Acopio para Venezuela</h1>
+  <p>Directorio mundial de puntos de recolección de ayuda humanitaria para el pueblo venezolano.</p>
+  <span class="aviso">Solo informativo — verifica datos antes de acudir</span>
+</header>
+
+<!-- Mapa interactivo -->
+<div id="map"></div>
+
+<div class="filtros-wrap">
+  <div class="filtros">
+    <button class="filtro-tab activo" data-grupo="todos" onclick="setGrupo(this)">Todos</button>
+    <button class="filtro-tab" data-grupo="Venezuela" onclick="setGrupo(this)">🇻🇪 Venezuela</button>
+    <button class="filtro-tab" data-grupo="internacional" onclick="setGrupo(this)">🌍 Internacional</button>
+    <select class="filtro-select" id="select-pais" style="display:none" onchange="render()">
+      <option value="">Todos los países</option>
+    </select>
+  </div>
+</div>
+
+<main>
+  <div class="contador" id="contador"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="agregar">
+    <p>¿Conoces un centro de acopio que no está en esta lista?</p>
+    <button class="btn-proponer" onclick="abrirModal()">+ Proponer un centro</button>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="cerrarModal(event)">
+  <div class="modal-box" id="modal-box">
+    <button class="modal-close" onclick="cerrarModal(true)">×</button>
+    <h2>Proponer un Centro de Acopio</h2>
+    <div id="modal-content">
+      <form id="form-proponer" onsubmit="enviarPropuesta(event)">
+        <div class="field">
+          <label>País *</label>
+          <input type="hidden" name="pais" id="pais-hidden">
+          <div class="pais-search-wrap">
+            <input type="text" id="pais-input" placeholder="Escribe para buscar un país..." autocomplete="off" required
+              oninput="filtrarPaises(this.value)" onfocus="abrirDropdown()" onblur="cerrarDropdownDelay()">
+            <div class="pais-dropdown" id="pais-dropdown"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre del centro *</label>
+          <input type="text" name="nombre" placeholder="Ej: Cruz Roja de Bogotá" required>
+        </div>
+        <div class="field">
+          <label>Ciudad *</label>
+          <input type="text" name="ciudad" placeholder="Ej: Bogotá, D.C." required>
+        </div>
+        <div class="field">
+          <label>Dirección</label>
+          <input type="text" name="direccion" placeholder="Ej: Av. Principal #123">
+        </div>
+        <div class="field">
+          <label>¿Qué aceptan?</label>
+          <textarea name="acepta" placeholder="Ej: Alimentos, medicamentos, ropa..."></textarea>
+        </div>
+        <div class="field">
+          <label>Contacto (teléfono / email / web)</label>
+          <input type="text" name="contacto" placeholder="Ej: +57 300 123 4567">
+        </div>
+        <div id="form-error" class="msg-err"></div>
+        <button type="submit" class="btn-submit">Enviar solicitud</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Información recopilada con fines humanitarios. Verifica los datos con cada organización antes de acudir. · Última actualización: junio 2026
+</footer>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+const FLAGS = {
+  'Colombia':'🇨🇴','Ecuador':'🇪🇨','Perú':'🇵🇪','Chile':'🇨🇱','Argentina':'🇦🇷',
+  'España':'🇪🇸','EE.UU.':'🇺🇸','Panamá':'🇵🇦','México':'🇲🇽','Brasil':'🇧🇷',
+  'Uruguay':'🇺🇾','Bolivia':'🇧🇴','Trinidad y Tobago':'🇹🇹','Paraguay':'🇵🇾',
+  'Costa Rica':'🇨🇷','Venezuela':'🇻🇪'
+};
+
+const COLORS = {
+  'Colombia':'#fcd116','Ecuador':'#003893','Perú':'#D91023','Chile':'#D52B1E',
+  'Argentina':'#74ACDF','España':'#AA151B','EE.UU.':'#3C3B6E','Panamá':'#005EA5',
+  'México':'#006847','Brasil':'#009C3B','Uruguay':'#5EB6E4','Bolivia':'#007934',
+  'Trinidad y Tobago':'#CE1126','Venezuela':'#CF8B00'
+};
+
+// ── Mapa ────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true, minZoom: 2, maxBounds: [[-90,-180],[90,180]], maxBoundsViscosity: 1.0 });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 18,
+  noWrap: true
+}).addTo(map);
+
+const clusters = L.markerClusterGroup({
+  showCoverageOnHover: false,
+  maxClusterRadius: 60
+});
+map.addLayer(clusters);
+
+// ── Datos ────────────────────────────────────────────────────────
+let allCenters = [];
+let activeFilter = 'todos';
+
+function mapsUrl(c) {
+  if (c.maps_link) return c.maps_link;
+  if (c.lat && c.lng) return `https://maps.google.com/?q=${c.lat},${c.lng}`;
+  return null;
+}
+
+function popupHtml(c) {
+  const contactoHtml = c.web
+    ? `<a href="${c.web}" target="_blank">${c.web}</a>`
+    : c.contacto || '';
+  const mapsBtn = (c.lat && c.lng)
+    ? `<a href="${mapsUrl(c)}" target="_blank" class="btn-maps">🗺 Cómo llegar</a>`
+    : '';
+  return `
+    <div style="min-width:220px;max-width:260px">
+      <div class="popup-nombre">${FLAGS[c.pais] || '🌍'} ${c.nombre}</div>
+      <div class="popup-meta">${c.ciudad}, ${c.pais}</div>
+      ${c.direccion ? `<div class="popup-meta">📍 ${c.direccion}</div>` : ''}
+      ${c.acepta ? `<div class="popup-acepta">✅ ${c.acepta}</div>` : ''}
+      ${contactoHtml ? `<div class="popup-contacto">📞 ${contactoHtml}</div>` : ''}
+      ${c.horario ? `<div class="popup-meta">🕐 ${c.horario}</div>` : ''}
+      ${mapsBtn}
+    </div>`;
+}
+
+function cardHtml(c) {
+  const flag = FLAGS[c.pais] || '🌍';
+  const color = COLORS[c.pais] || '#002D6E';
+  const contactoHtml = c.web
+    ? `<a href="${c.web}" target="_blank">${c.web}</a>`
+    : c.contacto ? `<a href="${c.contacto.includes('@') ? 'mailto:' : 'tel:'}${c.contacto.replace(/\s/g,'')}">${c.contacto}</a>` : '';
+  const url = mapsUrl(c);
+  const mapsBtn = url ? `<a href="${url}" target="_blank" class="btn-maps-card">🗺 Maps</a>` : '';
+  return `
+    <div class="card" data-pais="${c.pais}" data-id="${c.id}" style="border-left-color:${color}">
+      <span class="card-pais">${flag} ${c.pais}</span>
+      <h2>${c.nombre}</h2>
+      <div class="ciudad">📍 ${c.ciudad}</div>
+      ${c.direccion ? `<div class="direccion">${c.direccion}</div>` : ''}
+      ${c.acepta ? `<div class="items"><strong>Aceptan:</strong>${c.acepta}</div>` : ''}
+      ${c.horario ? `<div class="ciudad">🕐 ${c.horario}</div>` : ''}
+      <div class="card-footer">
+        <div class="contacto-wrap">${contactoHtml}</div>
+        ${mapsBtn}
+      </div>
+    </div>`;
+}
+
+let activeGrupo = 'todos';
+
+function buildFiltros(centers) {
+  const internacionales = [...new Set(
+    centers.filter(c => c.pais !== 'Venezuela').map(c => c.pais)
+  )].sort();
+  const sel = document.getElementById('select-pais');
+  internacionales.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = (FLAGS[p] || '🌍') + ' ' + p;
+    sel.appendChild(opt);
+  });
+}
+
+function setGrupo(btn) {
+  document.querySelectorAll('.filtro-tab').forEach(b => b.classList.remove('activo'));
+  btn.classList.add('activo');
+  activeGrupo = btn.dataset.grupo;
+  const sel = document.getElementById('select-pais');
+  sel.style.display = activeGrupo === 'internacional' ? '' : 'none';
+  if (activeGrupo !== 'internacional') sel.value = '';
+  render();
+}
+
+function render() {
+  const paisSel = document.getElementById('select-pais').value;
+  let visible;
+  if (activeGrupo === 'todos') {
+    visible = allCenters;
+  } else if (activeGrupo === 'Venezuela') {
+    visible = allCenters.filter(c => c.pais === 'Venezuela');
+  } else {
+    visible = allCenters.filter(c => c.pais !== 'Venezuela');
+    if (paisSel) visible = visible.filter(c => c.pais === paisSel);
+  }
+  document.getElementById('grid').innerHTML = visible.map(cardHtml).join('');
+  document.getElementById('contador').textContent =
+    `${visible.length} centro${visible.length !== 1 ? 's' : ''} encontrado${visible.length !== 1 ? 's' : ''}`;
+}
+
+async function loadCenters() {
+  const res = await fetch('/api/centers');
+  allCenters = await res.json();
+
+  buildFiltros(allCenters);
+  render('todos');
+
+  // Add map markers
+  const bounds = [];
+  allCenters.forEach(c => {
+    if (!c.lat || !c.lng) return;
+    const marker = L.marker([c.lat, c.lng]);
+    marker.bindPopup(popupHtml(c), { maxWidth: 280 });
+    clusters.addLayer(marker);
+    bounds.push([c.lat, c.lng]);
+  });
+
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+  else map.setView([4, -66], 4); // Venezuela centered fallback
+}
+
+loadCenters();
+
+// ── Buscador de países ────────────────────────────────────────────
+const TODOS_LOS_PAISES = [
+  'Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita',
+  'Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bangladés',
+  'Barbados','Baréin','Bélgica','Belice','Benín','Bielorrusia','Bolivia','Bosnia y Herzegovina',
+  'Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde',
+  'Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras',
+  'Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba','Dinamarca',
+  'Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos','Eritrea','Eslovaquia',
+  'Eslovenia','España','Estados Unidos','Estonia','Etiopía','Filipinas','Finlandia','Fiyi',
+  'Francia','Gabón','Gambia','Georgia','Ghana','Granada','Grecia','Guatemala','Guinea',
+  'Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras','Hungría','India','Indonesia',
+  'Irak','Irán','Irlanda','Islandia','Islas Marshall','Islas Salomón','Israel','Italia',
+  'Jamaica','Japón','Jordania','Kazajistán','Kenia','Kirguistán','Kiribati','Kuwait','Laos',
+  'Lesoto','Letonia','Líbano','Liberia','Libia','Liechtenstein','Lituania','Luxemburgo',
+  'Macedonia del Norte','Madagascar','Malasia','Malaui','Maldivas','Malí','Malta','Marruecos',
+  'Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco','Mongolia','Montenegro',
+  'Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria','Noruega','Nueva Zelanda',
+  'Omán','Países Bajos','Pakistán','Palaos','Palestina','Panamá','Papúa Nueva Guinea',
+  'Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana',
+  'República Checa','República Democrática del Congo','República Dominicana','Ruanda',
+  'Rumanía','Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas',
+  'Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona',
+  'Singapur','Siria','Somalia','Sri Lanka','Suazilandia','Sudáfrica','Sudán','Sudán del Sur',
+  'Suecia','Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo',
+  'Tonga','Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda',
+  'Uruguay','Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue'
+];
+
+function initBuscadorPais() {
+  const dd = document.getElementById('pais-dropdown');
+  dd.innerHTML = TODOS_LOS_PAISES.map(p =>
+    `<div class="pais-opt" data-val="${p}">${p}</div>`
+  ).join('');
+  dd.querySelectorAll('.pais-opt').forEach(opt => {
+    opt.addEventListener('mousedown', () => seleccionarPais(opt.dataset.val));
+  });
+}
+
+function filtrarPaises(q) {
+  const lower = q.toLowerCase();
+  document.getElementById('pais-dropdown').querySelectorAll('.pais-opt').forEach(opt => {
+    opt.classList.toggle('hidden', !opt.dataset.val.toLowerCase().includes(lower));
+  });
+  document.getElementById('pais-dropdown').classList.add('open');
+  document.getElementById('pais-hidden').value = '';
+}
+
+function seleccionarPais(val) {
+  document.getElementById('pais-input').value = val;
+  document.getElementById('pais-hidden').value = val;
+  document.getElementById('pais-dropdown').classList.remove('open');
+}
+
+function abrirDropdown() {
+  filtrarPaises(document.getElementById('pais-input').value);
+}
+
+function cerrarDropdownDelay() {
+  setTimeout(() => document.getElementById('pais-dropdown').classList.remove('open'), 150);
+}
+
+initBuscadorPais();
+
+// ── Modal ────────────────────────────────────────────────────────
+function abrirModal() {
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModal(forzar) {
+  if (forzar === true || forzar?.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+async function enviarPropuesta(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type=submit]');
+  const errDiv = document.getElementById('form-error');
+  errDiv.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const data = Object.fromEntries(new FormData(form));
+  if (!data.pais) { errDiv.textContent = 'Selecciona un país de la lista.'; btn.disabled = false; btn.textContent = 'Enviar solicitud'; return; }
+  try {
+    const res = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (json.ok) {
+      document.getElementById('modal-content').innerHTML =
+        '<div class="msg-ok">✅ ¡Gracias! Tu solicitud fue enviada y será revisada por el administrador.</div>';
+    } else {
+      errDiv.textContent = json.error || 'Error al enviar.';
+      btn.disabled = false; btn.textContent = 'Enviar solicitud';
+    }
+  } catch {
+    errDiv.textContent = 'Error de conexión. Intenta de nuevo.';
+    btn.disabled = false; btn.textContent = 'Enviar solicitud';
+  }
+}
+</script>
+</body>
+</html>

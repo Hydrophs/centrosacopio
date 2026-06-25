@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Centros de Acopio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --azul: #002D6E; --verde: #1a7f37; --rojo: #c8102e;
+      --bg: #f0f4f8; --card: #fff; --muted: #666; --border: #e2e8f0;
+    }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: #1a1a1a; }
+
+    /* ── Topbar ── */
+    .topbar {
+      background: var(--azul); color: #fff;
+      padding: 1rem 1.5rem; display: flex; align-items: center;
+      justify-content: space-between; gap: 1rem;
+    }
+    .topbar h1 { font-size: 1.1rem; font-weight: 800; }
+    .topbar small { display: block; font-size: .72rem; color: #93b4e8; }
+    .btn-logout {
+      background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3);
+      padding: .35rem .9rem; border-radius: 6px; font-size: .82rem; cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.25); }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem; max-width: 1000px; margin: 1.5rem auto 0; padding: 0 1.25rem;
+    }
+    .stat {
+      background: var(--card); border-radius: 10px; padding: 1.1rem 1.2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07); border-left: 4px solid var(--azul);
+    }
+    .stat.pend { border-color: #d97706; }
+    .stat .num { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat .lbl { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+
+    /* ── Tabs ── */
+    .tabs { max-width: 1000px; margin: 1.5rem auto 0; padding: 0 1.25rem; }
+    .tab-nav { display: flex; gap: .5rem; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+    .tab-btn {
+      background: none; border: none; padding: .6rem 1.2rem; cursor: pointer;
+      font-size: .9rem; font-weight: 600; color: var(--muted);
+      border-bottom: 2.5px solid transparent; margin-bottom: -2px;
+    }
+    .tab-btn.activo { color: var(--azul); border-bottom-color: var(--azul); }
+    .tab-panel { display: none; }
+    .tab-panel.activo { display: block; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: .9rem; }
+    .empty .icon { font-size: 2.5rem; margin-bottom: .5rem; }
+
+    /* ── Submission cards ── */
+    .sub-list { display: grid; gap: 1rem; }
+    .sub-card {
+      background: var(--card); border-radius: 10px; padding: 1.2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07); border-left: 4px solid #d97706;
+      display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; align-items: start;
+    }
+    .sub-card h3 { font-size: .97rem; font-weight: 700; grid-column: 1; }
+    .sub-meta { font-size: .8rem; color: var(--muted); }
+    .sub-field { font-size: .82rem; margin-top: .3rem; }
+    .sub-field strong { color: #333; }
+    .sub-actions {
+      grid-column: 2; grid-row: 1 / 5; display: flex;
+      flex-direction: column; gap: .5rem; align-items: flex-end;
+    }
+    @media (max-width: 500px) {
+      .sub-card { grid-template-columns: 1fr; }
+      .sub-actions { grid-column: 1; grid-row: auto; flex-direction: row; }
+    }
+    .btn-aprobar {
+      background: var(--verde); color: #fff; border: none; border-radius: 6px;
+      padding: .4rem .9rem; font-size: .82rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .btn-aprobar:hover { background: #15692f; }
+    .btn-rechazar {
+      background: #fff; color: var(--rojo); border: 1.5px solid var(--rojo);
+      border-radius: 6px; padding: .38rem .9rem; font-size: .82rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-rechazar:hover { background: #fff0f0; }
+    .fecha { font-size: .72rem; color: #aaa; margin-top: .5rem; }
+
+    /* ── Centers table ── */
+    .centers-table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+    thead { background: var(--azul); color: #fff; }
+    th { padding: .7rem .9rem; text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: .65rem .9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafd; }
+    .btn-del {
+      background: none; color: var(--rojo); border: 1.5px solid var(--rojo);
+      border-radius: 5px; padding: .25rem .6rem; font-size: .75rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-del:hover { background: #fff0f0; }
+    .coords { font-size: .72rem; color: #aaa; }
+    .no-coords { font-size: .72rem; color: #ccc; font-style: italic; }
+
+    /* ── Formulario agregar ── */
+    .add-form { background: var(--card); border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+    .add-form h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--azul); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-grid .full { grid-column: 1 / -1; }
+    .f-label { display: block; font-size: .78rem; font-weight: 600; color: #444; margin-bottom: .3rem; }
+    .f-input {
+      width: 100%; padding: .55rem .75rem; border: 1.5px solid #ddd;
+      border-radius: 7px; font-size: .88rem; font-family: inherit; outline: none; transition: border .15s;
+    }
+    .f-input:focus { border-color: var(--azul); }
+    .f-hint { font-size: .72rem; color: #aaa; margin-top: .2rem; }
+    .btn-add {
+      margin-top: 1.2rem; padding: .65rem 1.8rem; background: var(--azul); color: #fff;
+      border: none; border-radius: 7px; font-size: .92rem; font-weight: 700; cursor: pointer;
+    }
+    .btn-add:hover { background: #001f4d; }
+    .btn-add:disabled { background: #aaa; cursor: default; }
+    .form-msg { font-size: .82rem; margin-top: .7rem; }
+    .form-msg.ok  { color: var(--verde); }
+    .form-msg.err { color: var(--rojo); }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 2rem; color: var(--muted); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+      background: #1a1a1a; color: #fff; padding: .7rem 1.2rem;
+      border-radius: 8px; font-size: .85rem; font-weight: 600;
+      opacity: 0; transition: opacity .2s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Panel de Administración</h1>
+    <small>Centros de Acopio Venezuela</small>
+  </div>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <a href="/" class="btn-logout">← Ver sitio</a>
+    <a href="/admin/logout" class="btn-logout">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="stats" id="stats">
+  <div class="stat pend"><div class="num" id="num-pend">–</div><div class="lbl">Solicitudes pendientes</div></div>
+  <div class="stat"><div class="num" id="num-centers">–</div><div class="lbl">Centros publicados</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab-nav">
+    <button class="tab-btn activo" onclick="setTab('solicitudes', this)">Solicitudes pendientes</button>
+    <button class="tab-btn" onclick="setTab('centros', this)">Centros activos</button>
+    <button class="tab-btn" onclick="setTab('agregar', this)">+ Agregar centro</button>
+  </div>
+
+  <!-- Solicitudes -->
+  <div class="tab-panel activo" id="tab-solicitudes">
+    <div class="loading" id="load-sub">Cargando...</div>
+    <div class="sub-list" id="sub-list"></div>
+  </div>
+
+  <!-- Agregar -->
+  <div class="tab-panel" id="tab-agregar">
+    <div class="add-form">
+      <h3>Nuevo Centro de Acopio</h3>
+      <form id="form-add" onsubmit="agregarCentro(event)">
+        <div class="form-grid">
+          <div>
+            <label class="f-label">País *</label>
+            <input class="f-input" name="pais" placeholder="Ej: Venezuela" required>
+          </div>
+          <div>
+            <label class="f-label">Ciudad *</label>
+            <input class="f-input" name="ciudad" placeholder="Ej: Caracas" required>
+          </div>
+          <div class="full">
+            <label class="f-label">Nombre del centro *</label>
+            <input class="f-input" name="nombre" placeholder="Ej: Cruz Roja — Sede Central" required>
+          </div>
+          <div class="full">
+            <label class="f-label">Dirección</label>
+            <input class="f-input" name="direccion" placeholder="Ej: Av. Principal #123, Urb. El Recreo">
+          </div>
+          <div class="full">
+            <label class="f-label">¿Qué aceptan?</label>
+            <input class="f-input" name="acepta" placeholder="Ej: Alimentos, medicamentos, ropa, agua">
+          </div>
+          <div>
+            <label class="f-label">Contacto (tel / email)</label>
+            <input class="f-input" name="contacto" placeholder="Ej: +58 212 555 1234">
+          </div>
+          <div>
+            <label class="f-label">Web / Instagram</label>
+            <input class="f-input" name="web" placeholder="Ej: https://instagram.com/...">
+          </div>
+          <div>
+            <label class="f-label">Horario</label>
+            <input class="f-input" name="horario" placeholder="Ej: Lun–Vie 8am–5pm">
+          </div>
+          <div class="full">
+            <label class="f-label">Link de Google Maps</label>
+            <input class="f-input" name="maps_link" type="url" placeholder="https://maps.app.goo.gl/... o https://www.google.com/maps/place/...">
+            <div class="f-hint">Las coordenadas se extraen automáticamente. Acepta links cortos (maps.app.goo.gl) y largos.</div>
+          </div>
+        </div>
+        <button type="submit" class="btn-add" id="btn-add">Publicar centro</button>
+        <div class="form-msg" id="add-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Centros -->
+  <div class="tab-panel" id="tab-centros">
+    <div class="loading" id="load-cen">Cargando...</div>
+    <div class="centers-table-wrap">
+      <table id="centers-table" style="display:none">
+        <thead>
+          <tr>
+            <th>País</th>
+            <th>Nombre</th>
+            <th>Ciudad</th>
+            <th>Contacto</th>
+            <th>Coords</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="centers-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let data = { submissions: [], centers: [] };
+
+function setTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+  btn.classList.add('activo');
+  document.getElementById('tab-' + id).classList.add('activo');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function fmt(iso) {
+  return new Date(iso).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function renderSubmissions(subs) {
+  document.getElementById('load-sub').style.display = 'none';
+  const list = document.getElementById('sub-list');
+  if (!subs.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">📭</div>No hay solicitudes pendientes.</div>';
+    return;
+  }
+  list.innerHTML = subs.map(s => `
+    <div class="sub-card" id="sub-${s.id}">
+      <h3>${s.nombre}</h3>
+      <div class="sub-meta">${s.pais} · ${s.ciudad}</div>
+      ${s.direccion ? `<div class="sub-field"><strong>Dirección:</strong> ${s.direccion}</div>` : ''}
+      ${s.acepta    ? `<div class="sub-field"><strong>Aceptan:</strong> ${s.acepta}</div>` : ''}
+      ${s.contacto  ? `<div class="sub-field"><strong>Contacto:</strong> ${s.contacto}</div>` : ''}
+      <div class="fecha">Recibido: ${fmt(s.fecha)}</div>
+      <div class="sub-actions">
+        <button class="btn-aprobar" onclick="aprobar(${s.id})">✅ Aprobar</button>
+        <button class="btn-rechazar" onclick="rechazar(${s.id})">✗ Rechazar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCenters(centers) {
+  document.getElementById('load-cen').style.display = 'none';
+  if (!centers.length) {
+    document.getElementById('centers-tbody').innerHTML = '';
+    document.getElementById('centers-table').style.display = 'none';
+    document.getElementById('tab-centros').insertAdjacentHTML('beforeend',
+      '<div class="empty"><div class="icon">🗂</div>No hay centros publicados aún.</div>');
+    return;
+  }
+  document.getElementById('centers-table').style.display = 'table';
+  document.getElementById('centers-tbody').innerHTML = centers.map(c => `
+    <tr id="cen-${c.id}">
+      <td>${c.pais}</td>
+      <td><strong>${c.nombre}</strong></td>
+      <td>${c.ciudad}</td>
+      <td>${c.contacto || c.web || '–'}</td>
+      <td>${c.lat && c.lng
+        ? `<span class="coords">${c.lat}, ${c.lng}</span>`
+        : `<span class="no-coords">sin coords</span>`}
+      </td>
+      <td><button class="btn-del" onclick="eliminar(${c.id})">Eliminar</button></td>
+    </tr>
+  `).join('');
+}
+
+async function loadData() {
+  const res = await fetch('/admin/api/data');
+  data = await res.json();
+  document.getElementById('num-pend').textContent = data.submissions.length;
+  document.getElementById('num-centers').textContent = data.centers.length;
+  renderSubmissions(data.submissions);
+  renderCenters(data.centers);
+}
+
+async function aprobar(id) {
+  const btn = document.querySelector(`#sub-${id} .btn-aprobar`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Aprobando...'; }
+  const res = await fetch(`/admin/api/approve/${id}`, { method: 'POST' });
+  if ((await res.json()).ok) {
+    document.getElementById('sub-' + id)?.remove();
+    toast('✅ Centro aprobado y publicado.');
+    loadData();
+  }
+}
+
+async function rechazar(id) {
+  if (!confirm('¿Rechazar esta solicitud? Se eliminará permanentemente.')) return;
+  await fetch(`/admin/api/reject/${id}`, { method: 'POST' });
+  document.getElementById('sub-' + id)?.remove();
+  toast('Solicitud rechazada.');
+  loadData();
+}
+
+async function agregarCentro(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-add');
+  const msg = document.getElementById('add-msg');
+  btn.disabled = true; btn.textContent = 'Publicando...';
+  msg.textContent = ''; msg.className = 'form-msg';
+
+  const data = Object.fromEntries(new FormData(e.target));
+  const res = await fetch('/admin/api/center', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (json.ok) {
+    msg.textContent = '✅ Centro publicado correctamente.';
+    msg.classList.add('ok');
+    e.target.reset();
+    loadData();
+  } else {
+    msg.textContent = json.error || 'Error al guardar.';
+    msg.classList.add('err');
+  }
+  btn.disabled = false; btn.textContent = 'Publicar centro';
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este centro del listado público?')) return;
+  await fetch(`/admin/api/center/${id}`, { method: 'DELETE' });
+  document.getElementById('cen-' + id)?.remove();
+  toast('Centro eliminado.');
+  loadData();
+}
+
+loadData();
+</script>
+</body>
+</html>
