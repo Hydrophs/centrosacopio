@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "analytics": { "id": "auto" },
   "builds": [
     { "src": "server.js", "use": "@vercel/node" }
   ],
