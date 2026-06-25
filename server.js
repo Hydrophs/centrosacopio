@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const { Pool }  = require('pg');
 const crypto    = require('crypto');
 const https     = require('https');
 const path      = require('path');
@@ -15,16 +14,14 @@ const USE_DB = process.env.DATABASE_URL &&
 
 let db;
 if (USE_DB) {
-  // ponytail: max:1 + sin idle timeout — configuración óptima para serverless/Vercel
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    max: 1,
-    idleTimeoutMillis: 0,
-    connectionTimeoutMillis: 10000
-  });
-  db = (sql, p) => pool.query(sql, p);
-  console.log('🗄  Modo: Postgres');
+  // ponytail: neon() usa HTTP en lugar de TCP — obligatorio para serverless (pg se cuelga por TCP timeout)
+  const { neon } = require('@neondatabase/serverless');
+  const sql = neon(process.env.DATABASE_URL);
+  db = async (query, params) => {
+    const rows = await sql.query(query, params || []);
+    return { rows };
+  };
+  console.log('🗄  Modo: Postgres (Neon serverless)');
 } else {
   // Fallback JSON para desarrollo local
   const readJ  = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
