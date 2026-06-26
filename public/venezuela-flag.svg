@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+  <rect width="900" height="200" fill="#FFD100"/>
+  <rect y="200" width="900" height="200" fill="#002395"/>
+  <rect y="400" width="900" height="200" fill="#CE1126"/>
+  <defs>
+    <polygon id="st" fill="#fff" points="0,-11 2.6,-8 7.0,-7.2 3.5,-4.4 4.2,0.5 0,-2.3 -4.2,0.5 -3.5,-4.4 -7.0,-7.2 -2.6,-8"/>
+  </defs>
+  <use href="#st" transform="translate(565,300)"/>
+  <use href="#st" transform="translate(536,278)"/>
+  <use href="#st" transform="translate(499,267)"/>
+  <use href="#st" transform="translate(461,271)"/>
+  <use href="#st" transform="translate(427,287)"/>
+  <use href="#st" transform="translate(401,313)"/>
+  <use href="#st" transform="translate(391,346)"/>
+  <use href="#st" transform="translate(397,380)"/>
+</svg>

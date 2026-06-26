@@ -1,543 +1,563 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centros de Acopio — Venezuela</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centros de Acopio — Ayuda Venezuela</title>
+<link rel="icon" type="image/svg+xml" href="/venezuela-flag.svg">
+<link rel="apple-touch-icon" href="/venezuela-flag.svg">
+<meta name="description" content="Directorio de centros de acopio humanitaria en Venezuela y el exterior. Busca el más cercano y entérate qué aceptan.">
+<meta property="og:title" content="Centros de Acopio · Ayuda Venezuela">
+<meta property="og:description" content="Directorio de centros de acopio humanitaria en Venezuela y el exterior.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+:root{
+  --accent:#0A3D91;--accent-hover:#0E4BB0;--bg:#f5f5f0;--surface:#fff;
+  --surface-2:#f0f0eb;--surface-3:#e8e8e3;--border:#e5e5e0;--border-strong:#d0d0cb;
+  --border-faint:rgba(0,0,0,.06);--text:#0D1320;--text-secondary:#56607A;
+  --text-muted:#8891A5;--text-onaccent:#fff;
+  --accent-soft:rgba(10,61,145,.08);--accent-ring:rgba(10,61,145,.2);
+  --warning:#CF8B00;--warning-soft:rgba(207,139,0,.08);
+  --success:#1a7f37;--success-soft:rgba(26,127,55,.1);
+  --danger:#c00;--danger-soft:rgba(200,0,0,.07);
+  --overlay:rgba(13,19,32,.6);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 14px rgba(0,0,0,.1);
+  --shadow-lg:0 8px 30px rgba(0,0,0,.15);--shadow-glow:0 0 0 3px rgba(10,61,145,.25);
+  --dur:.15s;--ease-out:cubic-bezier(.16,1,.3,1);
+  --font-mono:'SF Mono','Fira Code',monospace;
+  --tb-h:150px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{margin:0;overflow-x:hidden;max-width:100%}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 
-  <!-- Open Graph (Facebook, WhatsApp, etc.) -->
-  <meta property="og:title" content="Centros de Acopio para Venezuela">
-  <meta property="og:description" content="Directorio actualizado de centros de acopio en Venezuela y el mundo. Encuentra dónde donar ropa, alimentos y medicamentos.">
-  <meta property="og:image" content="https://www.ayudavenezuela.help/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:url" content="https://www.ayudavenezuela.help">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Ayuda Venezuela">
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Centros de Acopio para Venezuela">
-  <meta name="twitter:description" content="Directorio de centros de acopio en Venezuela y el mundo. Encuentra dónde donar.">
-  <meta name="twitter:image" content="https://www.ayudavenezuela.help/og-image.png">
+.leaflet-popup-content-wrapper{border-radius:16px!important;box-shadow:var(--shadow-lg)!important;border:1px solid var(--border)}
+.leaflet-popup-content{margin:13px 15px!important;font-family:inherit!important;line-height:1.5}
+.leaflet-container{font-family:inherit!important;background:var(--surface-2)!important}
+.leaflet-bar a{color:var(--text)!important;background:var(--surface)!important}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(10,61,145,.16)!important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:#0A3D91!important;color:#fff!important;font-family:var(--font-mono)!important;font-weight:700!important}
+@keyframes acopioPulse{0%{box-shadow:0 0 0 0 rgba(10,61,145,.45)}70%{box-shadow:0 0 0 16px rgba(10,61,145,0)}100%{box-shadow:0 0 0 0 rgba(10,61,145,0)}}
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+.hdr-wrap{max-width:1280px;margin:0 auto;padding:18px 20px 6px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.hdr-brand{display:flex;align-items:center;gap:12px}
+.hdr-flag{width:40px;height:27px;border-radius:5px;box-shadow:var(--shadow-sm);flex-shrink:0;display:block;object-fit:cover}
+.hdr-title{font-weight:800;font-size:19px;letter-spacing:-.02em;line-height:1.05}
+.hdr-sub{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-top:2px}
+.hdr-btn{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 16px;border-radius:13px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;transition:border-color var(--dur),color var(--dur)}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.notice-wrap{max-width:1280px;margin:0 auto;padding:8px 20px 0}
+.notice{display:flex;gap:9px;align-items:flex-start;background:var(--warning-soft);border:1px solid rgba(207,139,0,.3);border-radius:12px;padding:9px 13px;font-size:12.5px;color:var(--text-secondary);line-height:1.4}
+.notice svg{flex-shrink:0;margin-top:.5px}
 
-    :root {
-      --azul: #002D6E;
-      --amarillo: #CF8B00;
-      --bg: #f5f5f0;
-      --card: #fff;
-      --muted: #666;
-    }
+.toolbar{position:sticky;top:0;z-index:30;background:rgba(245,245,240,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);margin-top:14px}
+.toolbar-inner{max-width:1280px;margin:0 auto;padding:12px 20px;display:flex;flex-direction:column;gap:11px}
+.search-row{display:flex;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:180px}
+.search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none}
+.search-input{width:100%;height:48px;padding:0 16px 0 44px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:15px;outline:none;transition:border-color var(--dur),box-shadow var(--dur)}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.locate-btn{height:48px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border-radius:14px;border:none;background:var(--accent);color:var(--text-onaccent);font:inherit;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;transition:background var(--dur),box-shadow var(--dur)}
+.locate-btn:hover{background:var(--accent-hover);box-shadow:var(--shadow-glow)}
+.filter-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px;gap:2px}
+.tab-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:999px;border:none;font:inherit;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;transition:all var(--dur) var(--ease-out);background:transparent;color:var(--text-secondary)}
+.tab-btn.active{background:var(--accent);color:var(--text-onaccent);box-shadow:var(--shadow-glow)}
+.country-sel{height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:13px;cursor:pointer;outline:none;max-width:230px;display:none}
+.filter-right{display:flex;gap:12px;align-items:center}
+.count-lbl{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap}
+.view-toggle{display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px;gap:2px}
+.view-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:999px;border:none;font:inherit;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;transition:all var(--dur);background:transparent;color:var(--text-secondary)}
+.view-btn.active{background:var(--accent);color:var(--text-onaccent);box-shadow:var(--shadow-glow)}
 
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: #1a1a1a; line-height: 1.6; }
+main{max-width:1280px;margin:0 auto;padding:18px 20px 64px}
+.layout{display:block}
+.cards-col{min-width:0;max-width:100%}
+.cards-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.card{min-width:0;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:17px 17px 14px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;gap:9px;overflow-wrap:anywhere;transition:transform var(--dur) var(--ease-out),box-shadow var(--dur),border-color var(--dur)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--border-strong)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-lugar{font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-dist{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.card-name{font-size:16px;font-weight:700;line-height:1.25;color:var(--text);letter-spacing:-.01em}
+.card-dir{display:flex;gap:7px;font-size:13.5px;color:var(--text-secondary);line-height:1.45}
+.card-dir svg{flex-shrink:0;margin-top:2px;color:var(--text-muted)}
+.items-lbl{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.items-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;line-height:1.4}
+.card-hora{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--text-secondary)}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px;padding-top:11px;border-top:1px solid var(--border-faint)}
+.card-contacto{min-width:0;font-size:12.5px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-contacto a{color:var(--accent);font-weight:600;text-decoration:none}
+.btn-llegar{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 13px;border-radius:11px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:12.5px;white-space:nowrap;text-decoration:none;transition:all var(--dur)}
+.btn-llegar:hover{border-color:var(--accent);color:var(--accent)}
+.no-results{text-align:center;padding:60px 20px;border:1.5px dashed var(--border-strong);border-radius:20px;background:var(--surface);display:none}
+.no-results h3{font-weight:700;font-size:16px;margin-bottom:6px}
+.no-results p{font-size:14px;color:var(--text-secondary);margin-bottom:16px}
+.btn-clear{height:40px;padding:0 18px;border-radius:12px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.btn-clear:hover{border-color:var(--accent);color:var(--accent)}
+.proponer-wrap{text-align:center;margin-top:22px;padding-top:22px;border-top:1px solid var(--border)}
+.proponer-wrap p{font-size:13.5px;color:var(--text-secondary);margin-bottom:10px}
+.btn-proponer{display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 20px;border-radius:13px;border:none;background:var(--accent);color:var(--text-onaccent);font:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:background var(--dur),box-shadow var(--dur)}
+.btn-proponer:hover{background:var(--accent-hover);box-shadow:var(--shadow-glow)}
 
-    /* ── Header ── */
-    header {
-      background: var(--azul);
-      color: #fff;
-      padding: 2rem 1.5rem 1.5rem;
-      text-align: center;
-      border-bottom: 5px solid var(--amarillo);
-    }
-    .bandera { display: flex; justify-content: center; gap: 6px; margin-bottom: .8rem; }
-    .bandera span { display: block; height: 8px; width: 60px; border-radius: 2px; }
-    header h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; }
-    header p { margin-top: .4rem; font-size: .95rem; color: #c8d8ff; max-width: 560px; margin-inline: auto; }
-    .aviso {
-      display: inline-block; margin-top: .8rem;
-      background: var(--amarillo); color: #000;
-      font-size: .72rem; font-weight: 700; padding: .25rem .8rem;
-      border-radius: 20px; letter-spacing: .5px; text-transform: uppercase;
-    }
+#map-col{display:none}
+#map-el{width:100%;height:100%;min-height:420px;border-radius:20px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-md);background:var(--surface-2)}
+#mobile-map-el{width:100%;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--surface-2);display:none}
 
-    /* ── Mapa ── */
-    #map { height: 260px; width: 100%; z-index: 0; }
-    @media (max-width: 600px) { #map { height: 200px; } }
+footer{border-top:1px solid var(--border);padding:22px 20px;text-align:center}
+footer p{max-width:1280px;margin:0 auto;font-size:12px;color:var(--text-muted);line-height:1.6}
 
-    /* Popup Leaflet */
-    .popup-nombre { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
-    .popup-meta   { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
-    .popup-acepta { font-size: .78rem; background: #f0f4ff; padding: .4rem .6rem; border-radius: 5px; margin-bottom: .5rem; }
-    .popup-contacto { font-size: .8rem; margin-bottom: .5rem; color: #333; }
-    .btn-maps {
-      display: inline-flex; align-items: center; gap: .3rem;
-      background: #1a73e8; color: #fff; text-decoration: none;
-      padding: .4rem .85rem; border-radius: 5px; font-size: .8rem; font-weight: 600;
-    }
-    .btn-maps:hover { background: #1557b0; }
+.overlay{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:16px;background:var(--overlay);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:26px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);position:relative}
+.modal-close{position:absolute;top:16px;right:16px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:none;background:var(--surface-2);color:var(--text-secondary);cursor:pointer}
+.modal-close:hover{background:var(--surface-3)}
+.modal h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+.modal .sub{font-size:13.5px;color:var(--text-secondary);margin:0 0 18px}
+.field{display:block;margin-bottom:13px}
+.field span{display:block;font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.field input,.field textarea{width:100%;height:46px;padding:0 14px;border-radius:13px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:15px;outline:none;transition:border-color var(--dur),box-shadow var(--dur)}
+.field textarea{height:auto;padding:11px 14px;resize:vertical;min-height:64px}
+.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.form-err{font-size:13px;color:var(--danger);background:var(--danger-soft);border-radius:10px;padding:9px 12px;margin-bottom:8px;display:none}
+.btn-submit{width:100%;height:48px;margin-top:4px;border-radius:14px;border:none;background:var(--accent);color:var(--text-onaccent);font:inherit;font-weight:700;font-size:15px;cursor:pointer;transition:background var(--dur)}
+.btn-submit:hover:not(:disabled){background:var(--accent-hover)}
+.btn-submit:disabled{background:var(--text-muted);cursor:default}
+.submit-ok{text-align:center;padding:26px 10px;display:none}
+.submit-ok .check{width:54px;height:54px;border-radius:999px;background:var(--success-soft);display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.submit-ok h3{font-weight:700;font-size:16px;margin-bottom:5px}
+.submit-ok p{font-size:14px;color:var(--text-secondary);max-width:300px;margin:0 auto 18px}
 
-    /* ── Filtros ── */
-    .filtros-wrap { background: var(--azul); padding: .7rem 1.5rem 1rem; }
-    .filtros { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-    .filtro-tab {
-      background: rgba(255,255,255,.12); color: #fff;
-      border: 1px solid rgba(255,255,255,.22); padding: .35rem 1rem;
-      border-radius: 20px; font-size: .84rem; cursor: pointer;
-      transition: background .15s; white-space: nowrap;
-    }
-    .filtro-tab:hover, .filtro-tab.activo {
-      background: var(--amarillo); color: #000; border-color: var(--amarillo);
-    }
-    .filtro-select {
-      background: rgba(255,255,255,.95); color: #333; border: none;
-      padding: .35rem .85rem; border-radius: 20px; font-size: .83rem;
-      cursor: pointer; outline: none; max-width: 220px;
-    }
-    /* buscador de país en form */
-    .pais-search-wrap { position: relative; }
-    .pais-search-wrap input {
-      width: 100%; padding: .6rem .8rem; border: 1.5px solid #ddd;
-      border-radius: 7px; font-size: .9rem; font-family: inherit; outline: none;
-      transition: border .15s;
-    }
-    .pais-search-wrap input:focus { border-color: var(--azul); }
-    .pais-dropdown {
-      display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
-      background: #fff; border: 1.5px solid var(--azul); border-top: none;
-      border-radius: 0 0 7px 7px; max-height: 200px; overflow-y: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,.12);
-    }
-    .pais-dropdown.open { display: block; }
-    .pais-opt {
-      padding: .5rem .8rem; font-size: .88rem; cursor: pointer;
-    }
-    .pais-opt:hover, .pais-opt.hl { background: #f0f4ff; }
-    .pais-opt.hidden { display: none; }
-
-    /* ── Grid ── */
-    main { max-width: 1100px; margin: 1.8rem auto; padding: 0 1.25rem 3rem; }
-    .contador { font-size: .82rem; color: var(--muted); margin-bottom: 1rem; text-align: right; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.2rem; }
-
-    .card {
-      background: var(--card); border-radius: 10px; padding: 1.2rem 1.2rem .9rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08); border-left: 4px solid var(--azul);
-      display: flex; flex-direction: column; gap: .5rem;
-    }
-    .card-pais   { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
-    .card h2     { font-size: .97rem; font-weight: 700; line-height: 1.3; }
-    .card .ciudad { font-size: .82rem; color: var(--muted); }
-    .card .direccion { font-size: .82rem; }
-    .card .items {
-      font-size: .78rem; background: #f0f4ff; border-radius: 6px;
-      padding: .45rem .65rem; color: #333;
-    }
-    .card .items strong { display: block; margin-bottom: .15rem; color: var(--azul); }
-    .card .contacto {
-      font-size: .8rem; margin-top: auto; padding-top: .45rem;
-      border-top: 1px solid #eee; color: var(--muted);
-    }
-    .card .contacto a { color: var(--azul); text-decoration: none; }
-    .card .contacto a:hover { text-decoration: underline; }
-    .card .card-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding-top: .4rem; border-top: 1px solid #eee; gap: .5rem; flex-wrap: wrap;
-    }
-    .card .contacto-wrap { font-size: .8rem; color: var(--muted); flex: 1; min-width: 0; }
-    .card .contacto-wrap a { color: var(--azul); text-decoration: none; }
-    .btn-maps-card {
-      display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap;
-      background: #1a73e8; color: #fff; text-decoration: none;
-      padding: .3rem .7rem; border-radius: 5px; font-size: .75rem; font-weight: 600;
-    }
-    .btn-maps-card:hover { background: #1557b0; }
-
-    .oculto { display: none !important; }
-
-    /* ── Modal proponer ── */
-    .agregar { text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #ddd; }
-    .agregar p { color: var(--muted); font-size: .88rem; margin-bottom: .7rem; }
-    .btn-proponer {
-      background: var(--azul); color: #fff; border: none; cursor: pointer;
-      padding: .6rem 1.5rem; border-radius: 6px; font-weight: 600; font-size: .9rem;
-    }
-    .btn-proponer:hover { background: #001f4d; }
-
-    .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.55); z-index: 1000;
-      align-items: center; justify-content: center; padding: 1rem;
-    }
-    .overlay.open { display: flex; }
-    .modal-box {
-      background: #fff; border-radius: 12px; padding: 2rem;
-      width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
-      position: relative;
-    }
-    .modal-box h2 { font-size: 1.1rem; margin-bottom: 1.2rem; color: var(--azul); }
-    .modal-close {
-      position: absolute; top: 1rem; right: 1rem;
-      background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #999;
-    }
-    .field { margin-bottom: 1rem; }
-    .field label { display: block; font-size: .8rem; font-weight: 600; color: #444; margin-bottom: .35rem; }
-    .field input, .field select, .field textarea {
-      width: 100%; padding: .6rem .8rem; border: 1.5px solid #ddd;
-      border-radius: 7px; font-size: .9rem; font-family: inherit; outline: none;
-      transition: border .15s;
-    }
-    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--azul); }
-    .field textarea { resize: vertical; min-height: 70px; }
-    .btn-submit {
-      width: 100%; padding: .7rem; background: var(--azul); color: #fff;
-      border: none; border-radius: 7px; font-size: .95rem; font-weight: 700; cursor: pointer;
-    }
-    .btn-submit:hover { background: #001f4d; }
-    .btn-submit:disabled { background: #aaa; cursor: default; }
-    .msg-ok { text-align: center; padding: 1rem; color: #1a7f37; font-weight: 600; }
-    .msg-err { color: #c00; font-size: .82rem; margin-top: .5rem; }
-
-    /* ── Footer ── */
-    footer { text-align: center; padding: 1.5rem; font-size: .76rem; color: var(--muted); border-top: 1px solid #ddd; }
-  </style>
+@media(min-width:980px){
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:20px;align-items:start}
+  #map-col{display:block;position:sticky;top:var(--tb-h);height:calc(100vh - var(--tb-h) - 28px);min-height:480px;z-index:0}
+  .view-toggle{display:none!important}
+  #mobile-map-el{display:none!important}
+}
+@media(max-width:979px){
+  .view-toggle{display:inline-flex}
+  .layout.show-map .cards-col{display:none}
+  .layout.show-map #mobile-map-el{display:block;height:calc(100vh - var(--tb-h) - 90px);min-height:420px}
+  .layout.show-list #mobile-map-el{display:none}
+}
+</style>
 </head>
 <body>
 
 <header>
-  <div class="bandera">
-    <span style="background:#CF8B00"></span>
-    <span style="background:#002D6E"></span>
-    <span style="background:#C8102E"></span>
+  <div class="hdr-wrap">
+    <div class="hdr-brand">
+      <img src="/venezuela-flag.svg" alt="Venezuela" class="hdr-flag">
+      <div>
+        <div class="hdr-title">Centros de Acopio</div>
+        <div class="hdr-sub">Ayuda humanitaria · Venezuela</div>
+      </div>
+    </div>
+    <button class="hdr-btn" onclick="openModal()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Proponer centro
+    </button>
   </div>
-  <h1>Centros de Acopio para Venezuela</h1>
-  <p>Directorio mundial de puntos de recolección de ayuda humanitaria para el pueblo venezolano.</p>
-  <span class="aviso">Solo informativo — verifica datos antes de acudir</span>
 </header>
 
-<!-- Mapa interactivo -->
-<div id="map"></div>
-
-<div class="filtros-wrap">
-  <div class="filtros">
-    <button class="filtro-tab activo" data-grupo="todos" onclick="setGrupo(this)">Todos</button>
-    <button class="filtro-tab" data-grupo="Venezuela" onclick="setGrupo(this)">🇻🇪 Venezuela</button>
-    <button class="filtro-tab" data-grupo="internacional" onclick="setGrupo(this)">🌍 Internacional</button>
-    <select class="filtro-select" id="select-pais" style="display:none" onchange="render()">
-      <option value="">Todos los países</option>
-    </select>
+<div class="notice-wrap">
+  <div class="notice">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CF8B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+    Solo informativo — verifica los datos con cada organización antes de acudir.
   </div>
 </div>
 
-<main>
-  <div class="contador" id="contador"></div>
-  <div class="grid" id="grid"></div>
-
-  <div class="agregar">
-    <p>¿Conoces un centro de acopio que no está en esta lista?</p>
-    <button class="btn-proponer" onclick="abrirModal()">+ Proponer un centro</button>
-  </div>
-</main>
-
-<!-- Modal -->
-<div class="overlay" id="overlay" onclick="cerrarModal(event)">
-  <div class="modal-box" id="modal-box">
-    <button class="modal-close" onclick="cerrarModal(true)">×</button>
-    <h2>Proponer un Centro de Acopio</h2>
-    <div id="modal-content">
-      <form id="form-proponer" onsubmit="enviarPropuesta(event)">
-        <div class="field">
-          <label>País *</label>
-          <input type="hidden" name="pais" id="pais-hidden">
-          <div class="pais-search-wrap">
-            <input type="text" id="pais-input" placeholder="Escribe para buscar un país..." autocomplete="off" required
-              oninput="filtrarPaises(this.value)" onfocus="abrirDropdown()" onblur="cerrarDropdownDelay()">
-            <div class="pais-dropdown" id="pais-dropdown"></div>
-          </div>
+<div class="toolbar" id="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" class="search-input" type="search" autocomplete="off" placeholder="Busca por ciudad, estado o nombre…" oninput="onSearch(this.value)">
+      </div>
+      <button class="locate-btn" onclick="locateMe()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>
+        <span id="locate-lbl">Cerca de mí</span>
+      </button>
+    </div>
+    <div class="filter-row">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="tabs">
+          <button class="tab-btn active" data-group="todos" onclick="setGroup(this)">Todos</button>
+          <button class="tab-btn" data-group="venezuela" onclick="setGroup(this)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 0 0 0 18M12.5 3a17 17 0 0 1 0 18"/></svg>
+            Venezuela
+          </button>
+          <button class="tab-btn" data-group="internacional" onclick="setGroup(this)">Internacional</button>
         </div>
-        <div class="field">
-          <label>Nombre del centro *</label>
-          <input type="text" name="nombre" placeholder="Ej: Cruz Roja de Bogotá" required>
+        <select id="country-sel" class="country-sel" onchange="onCountry(this.value)">
+          <option value="">Todos los países</option>
+        </select>
+      </div>
+      <div class="filter-right">
+        <span class="count-lbl" id="count-lbl"></span>
+        <div class="view-toggle" id="view-toggle">
+          <button class="view-btn active" data-view="lista" onclick="setView(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            Lista
+          </button>
+          <button class="view-btn" data-view="mapa" onclick="setView(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            Mapa
+          </button>
         </div>
-        <div class="field">
-          <label>Ciudad *</label>
-          <input type="text" name="ciudad" placeholder="Ej: Bogotá, D.C." required>
-        </div>
-        <div class="field">
-          <label>Dirección</label>
-          <input type="text" name="direccion" placeholder="Ej: Av. Principal #123">
-        </div>
-        <div class="field">
-          <label>¿Qué aceptan?</label>
-          <textarea name="acepta" placeholder="Ej: Alimentos, medicamentos, ropa..."></textarea>
-        </div>
-        <div class="field">
-          <label>Contacto (teléfono / email / web)</label>
-          <input type="text" name="contacto" placeholder="Ej: +57 300 123 4567">
-        </div>
-        <div id="form-error" class="msg-err"></div>
-        <button type="submit" class="btn-submit">Enviar solicitud</button>
-      </form>
+      </div>
     </div>
   </div>
 </div>
 
+<main>
+  <div class="layout show-list" id="layout">
+    <div class="cards-col" id="cards-col">
+      <div class="cards-grid" id="cards-grid"></div>
+      <div class="no-results" id="no-results">
+        <h3>Sin resultados</h3>
+        <p>No encontramos centros con esos filtros.</p>
+        <button class="btn-clear" onclick="clearFilters()">Limpiar filtros</button>
+      </div>
+      <div class="proponer-wrap">
+        <p>¿Conoces un centro que no está en la lista?</p>
+        <button class="btn-proponer" onclick="openModal()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Proponer un centro
+        </button>
+      </div>
+    </div>
+    <div id="map-col">
+      <div id="map-el"></div>
+    </div>
+    <div id="mobile-map-el"></div>
+  </div>
+</main>
+
 <footer>
-  Información recopilada con fines humanitarios. Verifica los datos con cada organización antes de acudir. · Última actualización: junio 2026
+  <p>Información recopilada con fines humanitarios. Verifica los datos con cada organización antes de acudir. · Actualizado junio 2026</p>
 </footer>
 
-<!-- Leaflet -->
+<div class="overlay" id="overlay" onclick="closeModalBackdrop(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="modal-form">
+      <h2>Proponer un centro</h2>
+      <p class="sub">Tu propuesta será revisada antes de publicarse.</p>
+      <form id="propose-form" onsubmit="onSubmit(event)">
+        <datalist id="paises-dl">
+          <option value="Venezuela"><option value="Colombia"><option value="Perú">
+          <option value="Chile"><option value="Argentina"><option value="Ecuador">
+          <option value="España"><option value="Estados Unidos"><option value="Otro">
+        </datalist>
+        <label class="field"><span>País *</span><input name="pais" list="paises-dl" value="Venezuela" required placeholder="Venezuela"></label>
+        <label class="field"><span>Nombre del centro *</span><input name="nombre" required placeholder="Ej: Cruz Roja de Caracas"></label>
+        <label class="field"><span>Ciudad *</span><input name="ciudad" required placeholder="Ej: Caracas"></label>
+        <label class="field"><span>Dirección</span><input name="direccion" placeholder="Ej: Av. Principal, frente a la plaza"></label>
+        <label class="field"><span>¿Qué aceptan?</span><textarea name="acepta" rows="2" placeholder="Ej: Agua, alimentos no perecederos, medicinas…"></textarea></label>
+        <label class="field"><span>Contacto (teléfono, correo o red social)</span><input name="contacto" placeholder="Ej: +58 412 123 4567"></label>
+        <div class="form-err" id="form-err"></div>
+        <button type="submit" class="btn-submit" id="btn-submit">Enviar propuesta</button>
+      </form>
+    </div>
+    <div class="submit-ok" id="submit-ok">
+      <div class="check">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h3>¡Gracias!</h3>
+      <p>Recibimos tu propuesta. El equipo la revisará pronto.</p>
+      <button class="btn-proponer" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
 <script>
-const FLAGS = {
-  'Colombia':'🇨🇴','Ecuador':'🇪🇨','Perú':'🇵🇪','Chile':'🇨🇱','Argentina':'🇦🇷',
-  'España':'🇪🇸','EE.UU.':'🇺🇸','Panamá':'🇵🇦','México':'🇲🇽','Brasil':'🇧🇷',
-  'Uruguay':'🇺🇾','Bolivia':'🇧🇴','Trinidad y Tobago':'🇹🇹','Paraguay':'🇵🇾',
-  'Costa Rica':'🇨🇷','Venezuela':'🇻🇪'
-};
+var centers=[], filtered=[], userLoc=null, map=null, cluster=null, markersById={};
+var st={group:'todos',country:'',query:''};
 
-const COLORS = {
-  'Colombia':'#fcd116','Ecuador':'#003893','Perú':'#D91023','Chile':'#D52B1E',
-  'Argentina':'#74ACDF','España':'#AA151B','EE.UU.':'#3C3B6E','Panamá':'#005EA5',
-  'México':'#006847','Brasil':'#009C3B','Uruguay':'#5EB6E4','Bolivia':'#007934',
-  'Trinidad y Tobago':'#CE1126','Venezuela':'#CF8B00'
-};
+function norm(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
 
-// ── Mapa ────────────────────────────────────────────────────────
-const map = L.map('map', { zoomControl: true, minZoom: 2, maxBounds: [[-90,-180],[90,180]], maxBoundsViscosity: 1.0 });
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-  noWrap: true
-}).addTo(map);
-
-const clusters = L.markerClusterGroup({
-  showCoverageOnHover: false,
-  maxClusterRadius: 60
-});
-map.addLayer(clusters);
-
-// ── Datos ────────────────────────────────────────────────────────
-let allCenters = [];
-let activeFilter = 'todos';
-
-function mapsUrl(c) {
-  if (c.maps_link) return c.maps_link;
-  if (c.lat && c.lng) return `https://maps.google.com/?q=${c.lat},${c.lng}`;
-  return null;
+function haversine(a,b){
+  var R=6371,toR=Math.PI/180,dLat=(b.lat-a.lat)*toR,dLng=(b.lng-a.lng)*toR;
+  var h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return 2*R*Math.asin(Math.sqrt(h));
 }
 
-function popupHtml(c) {
-  const contactoHtml = c.web
-    ? `<a href="${c.web}" target="_blank">${c.web}</a>`
-    : c.contacto || '';
-  const mapsBtn = (c.lat && c.lng)
-    ? `<a href="${mapsUrl(c)}" target="_blank" class="btn-maps">🗺 Cómo llegar</a>`
-    : '';
-  return `
-    <div style="min-width:220px;max-width:260px">
-      <div class="popup-nombre">${FLAGS[c.pais] || '🌍'} ${c.nombre}</div>
-      <div class="popup-meta">${c.ciudad}, ${c.pais}</div>
-      ${c.direccion ? `<div class="popup-meta">📍 ${c.direccion}</div>` : ''}
-      ${c.acepta ? `<div class="popup-acepta">✅ ${c.acepta}</div>` : ''}
-      ${contactoHtml ? `<div class="popup-contacto">📞 ${contactoHtml}</div>` : ''}
-      ${c.horario ? `<div class="popup-meta">🕐 ${c.horario}</div>` : ''}
-      ${mapsBtn}
-    </div>`;
-}
-
-function cardHtml(c) {
-  const flag = FLAGS[c.pais] || '🌍';
-  const color = COLORS[c.pais] || '#002D6E';
-  const contactoHtml = c.web
-    ? `<a href="${c.web}" target="_blank">${c.web}</a>`
-    : c.contacto ? `<a href="${c.contacto.includes('@') ? 'mailto:' : 'tel:'}${c.contacto.replace(/\s/g,'')}">${c.contacto}</a>` : '';
-  const url = mapsUrl(c);
-  const mapsBtn = url ? `<a href="${url}" target="_blank" class="btn-maps-card">🗺 Maps</a>` : '';
-  return `
-    <div class="card" data-pais="${c.pais}" data-id="${c.id}" style="border-left-color:${color}">
-      <span class="card-pais">${flag} ${c.pais}</span>
-      <h2>${c.nombre}</h2>
-      <div class="ciudad">📍 ${c.ciudad}</div>
-      ${c.direccion ? `<div class="direccion">${c.direccion}</div>` : ''}
-      ${c.acepta ? `<div class="items"><strong>Aceptan:</strong>${c.acepta}</div>` : ''}
-      ${c.horario ? `<div class="ciudad">🕐 ${c.horario}</div>` : ''}
-      <div class="card-footer">
-        <div class="contacto-wrap">${contactoHtml}</div>
-        ${mapsBtn}
-      </div>
-    </div>`;
-}
-
-let activeGrupo = 'todos';
-
-function buildFiltros(centers) {
-  const internacionales = [...new Set(
-    centers.filter(c => c.pais !== 'Venezuela').map(c => c.pais)
-  )].sort();
-  const sel = document.getElementById('select-pais');
-  internacionales.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p; opt.textContent = (FLAGS[p] || '🌍') + ' ' + p;
-    sel.appendChild(opt);
-  });
-}
-
-function setGrupo(btn) {
-  document.querySelectorAll('.filtro-tab').forEach(b => b.classList.remove('activo'));
-  btn.classList.add('activo');
-  activeGrupo = btn.dataset.grupo;
-  const sel = document.getElementById('select-pais');
-  sel.style.display = activeGrupo === 'internacional' ? '' : 'none';
-  if (activeGrupo !== 'internacional') sel.value = '';
-  render();
-}
-
-function render() {
-  const paisSel = document.getElementById('select-pais').value;
-  let visible;
-  if (activeGrupo === 'todos') {
-    visible = allCenters;
-  } else if (activeGrupo === 'Venezuela') {
-    visible = allCenters.filter(c => c.pais === 'Venezuela');
-  } else {
-    visible = allCenters.filter(c => c.pais !== 'Venezuela');
-    if (paisSel) visible = visible.filter(c => c.pais === paisSel);
+function parseAccept(s){
+  if(!s) return [];
+  var parts=(s+'').split(/[,;]+/).map(function(x){return x.trim().replace(/\.+$/,'').trim();}).filter(function(x){return x.length>1;});
+  var seen={},out=[];
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i],k=norm(p);
+    if(seen[k]) continue; seen[k]=1;
+    if(p.length>34) p=p.slice(0,32)+'…';
+    out.push(p.charAt(0).toUpperCase()+p.slice(1));
   }
-  document.getElementById('grid').innerHTML = visible.map(cardHtml).join('');
-  document.getElementById('contador').textContent =
-    `${visible.length} centro${visible.length !== 1 ? 's' : ''} encontrado${visible.length !== 1 ? 's' : ''}`;
+  if(out.length>8) return out.slice(0,8).concat(['+'+(out.length-8)+' más']);
+  return out;
 }
 
-async function loadCenters() {
-  const res = await fetch('/api/centers');
-  allCenters = await res.json();
-
-  buildFiltros(allCenters);
-  render('todos');
-
-  // Add map markers
-  const bounds = [];
-  allCenters.forEach(c => {
-    if (!c.lat || !c.lng) return;
-    const marker = L.marker([c.lat, c.lng]);
-    marker.bindPopup(popupHtml(c), { maxWidth: 280 });
-    clusters.addLayer(marker);
-    bounds.push([c.lat, c.lng]);
-  });
-
-  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
-  else map.setView([4, -66], 4); // Venezuela centered fallback
-}
-
-loadCenters();
-
-// ── Buscador de países ────────────────────────────────────────────
-const TODOS_LOS_PAISES = [
-  'Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita',
-  'Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bangladés',
-  'Barbados','Baréin','Bélgica','Belice','Benín','Bielorrusia','Bolivia','Bosnia y Herzegovina',
-  'Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde',
-  'Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras',
-  'Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba','Dinamarca',
-  'Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos','Eritrea','Eslovaquia',
-  'Eslovenia','España','Estados Unidos','Estonia','Etiopía','Filipinas','Finlandia','Fiyi',
-  'Francia','Gabón','Gambia','Georgia','Ghana','Granada','Grecia','Guatemala','Guinea',
-  'Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras','Hungría','India','Indonesia',
-  'Irak','Irán','Irlanda','Islandia','Islas Marshall','Islas Salomón','Israel','Italia',
-  'Jamaica','Japón','Jordania','Kazajistán','Kenia','Kirguistán','Kiribati','Kuwait','Laos',
-  'Lesoto','Letonia','Líbano','Liberia','Libia','Liechtenstein','Lituania','Luxemburgo',
-  'Macedonia del Norte','Madagascar','Malasia','Malaui','Maldivas','Malí','Malta','Marruecos',
-  'Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco','Mongolia','Montenegro',
-  'Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria','Noruega','Nueva Zelanda',
-  'Omán','Países Bajos','Pakistán','Palaos','Palestina','Panamá','Papúa Nueva Guinea',
-  'Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana',
-  'República Checa','República Democrática del Congo','República Dominicana','Ruanda',
-  'Rumanía','Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas',
-  'Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona',
-  'Singapur','Siria','Somalia','Sri Lanka','Suazilandia','Sudáfrica','Sudán','Sudán del Sur',
-  'Suecia','Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo',
-  'Tonga','Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda',
-  'Uruguay','Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue'
-];
-
-function initBuscadorPais() {
-  const dd = document.getElementById('pais-dropdown');
-  dd.innerHTML = TODOS_LOS_PAISES.map(p =>
-    `<div class="pais-opt" data-val="${p}">${p}</div>`
-  ).join('');
-  dd.querySelectorAll('.pais-opt').forEach(opt => {
-    opt.addEventListener('mousedown', () => seleccionarPais(opt.dataset.val));
-  });
-}
-
-function filtrarPaises(q) {
-  const lower = q.toLowerCase();
-  document.getElementById('pais-dropdown').querySelectorAll('.pais-opt').forEach(opt => {
-    opt.classList.toggle('hidden', !opt.dataset.val.toLowerCase().includes(lower));
-  });
-  document.getElementById('pais-dropdown').classList.add('open');
-  document.getElementById('pais-hidden').value = '';
-}
-
-function seleccionarPais(val) {
-  document.getElementById('pais-input').value = val;
-  document.getElementById('pais-hidden').value = val;
-  document.getElementById('pais-dropdown').classList.remove('open');
-}
-
-function abrirDropdown() {
-  filtrarPaises(document.getElementById('pais-input').value);
-}
-
-function cerrarDropdownDelay() {
-  setTimeout(() => document.getElementById('pais-dropdown').classList.remove('open'), 150);
-}
-
-initBuscadorPais();
-
-// ── Modal ────────────────────────────────────────────────────────
-function abrirModal() {
-  document.getElementById('overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function cerrarModal(forzar) {
-  if (forzar === true || forzar?.target === document.getElementById('overlay')) {
-    document.getElementById('overlay').classList.remove('open');
-    document.body.style.overflow = '';
+function fmtContacto(contacto,web){
+  var v=((web||contacto)||'').toString().trim();
+  if(!v) return {text:'',href:'',link:false};
+  if(/^https?:\/\//i.test(v)){
+    var label='Ver enlace';
+    if(/instagram\.com/i.test(v)) label='Ver Instagram';
+    else if(/wa\.me|whatsapp/i.test(v)) label='WhatsApp';
+    else if(/maps\./i.test(v)) label='Ver en mapa';
+    return {text:label,href:v,link:true};
   }
+  if(v.indexOf('@')>-1&&/\S+@\S+\.\S+/.test(v)&&!/\s/.test(v)) return {text:v,href:'mailto:'+v,link:true};
+  var digits=(v.match(/\d/g)||[]).length,letters=(v.match(/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/g)||[]).length;
+  if(digits>=7&&letters<4) return {text:v,href:'tel:'+v.replace(/[^\d+]/g,''),link:true};
+  return {text:v,href:'',link:false};
 }
 
-async function enviarPropuesta(e) {
-  e.preventDefault();
-  const form = e.target;
-  const btn = form.querySelector('button[type=submit]');
-  const errDiv = document.getElementById('form-error');
-  errDiv.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
+function prep(c){
+  var items=parseAccept(c.acepta);
+  var isVe=c.pais==='Venezuela';
+  var lugar=[c.ciudad,isVe?null:c.pais].filter(Boolean).join(' · ')||c.pais||'';
+  var distLabel='';
+  if(userLoc&&c.lat&&c.lng){
+    var d=haversine(userLoc,c);
+    distLabel=d<1?Math.round(d*1000)+' m':(d<10?d.toFixed(1):Math.round(d))+' km';
+  }
+  var mapsUrl=c.maps_link?c.maps_link:(c.lat&&c.lng?'https://maps.google.com/?q='+c.lat+','+c.lng:'');
+  var ct=fmtContacto(c.contacto,c.web);
+  return {id:c.id,nombre:c.nombre||'Centro de acopio',pais:c.pais,lat:c.lat,lng:c.lng,
+    direccion:c.direccion||'',items:items,lugar:lugar,horario:c.horario||'',
+    distLabel:distLabel,mapsUrl:mapsUrl,hasMaps:!!mapsUrl,ct:ct};
+}
 
-  const data = Object.fromEntries(new FormData(form));
-  if (!data.pais) { errDiv.textContent = 'Selecciona un país de la lista.'; btn.disabled = false; btn.textContent = 'Enviar solicitud'; return; }
-  try {
-    const res = await fetch('/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const json = await res.json();
-    if (json.ok) {
-      document.getElementById('modal-content').innerHTML =
-        '<div class="msg-ok">✅ ¡Gracias! Tu solicitud fue enviada y será revisada por el administrador.</div>';
-    } else {
-      errDiv.textContent = json.error || 'Error al enviar.';
-      btn.disabled = false; btn.textContent = 'Enviar solicitud';
+function esc(s){ return (s||'').toString().replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+
+function getFiltered(){
+  var q=norm(st.query);
+  var list=centers.filter(function(c){
+    if(st.group==='venezuela'&&c.pais!=='Venezuela') return false;
+    if(st.group==='internacional'){
+      if(c.pais==='Venezuela') return false;
+      if(st.country&&c.pais!==st.country) return false;
     }
-  } catch {
-    errDiv.textContent = 'Error de conexión. Intenta de nuevo.';
-    btn.disabled = false; btn.textContent = 'Enviar solicitud';
+    if(q){
+      var hay=norm([c.nombre,c.ciudad,c.direccion,c.pais].join(' '));
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+  if(userLoc){
+    list=list.slice().sort(function(a,b){
+      var da=(a.lat&&a.lng)?haversine(userLoc,a):Infinity;
+      var db=(b.lat&&b.lng)?haversine(userLoc,b):Infinity;
+      return da-db;
+    });
+  } else {
+    list=list.slice().sort(function(a,b){
+      var va=a.pais==='Venezuela'?0:1,vb=b.pais==='Venezuela'?0:1;
+      if(va!==vb) return va-vb;
+      return norm(a.ciudad||'').localeCompare(norm(b.ciudad||''));
+    });
+  }
+  return list;
+}
+
+function renderCards(){
+  filtered=getFiltered().map(prep);
+  var grid=document.getElementById('cards-grid');
+  var noRes=document.getElementById('no-results');
+  var lbl=document.getElementById('count-lbl');
+  var ctx=userLoc?' cerca de ti':'';
+  lbl.textContent=filtered.length+(filtered.length===1?' centro':' centros')+ctx;
+
+  if(!filtered.length&&centers.length){ grid.innerHTML=''; noRes.style.display=''; return; }
+  noRes.style.display='none';
+
+  grid.innerHTML=filtered.map(function(c){
+    var distH=c.distLabel?'<span class="card-dist"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>'+esc(c.distLabel)+'</span>':'';
+    var dirH=c.direccion?'<div class="card-dir"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg><span>'+esc(c.direccion)+'</span></div>':'';
+    var itemsH=c.items.length?'<div><div class="items-lbl">Aceptan</div><div class="items-tags">'+c.items.map(function(i){return '<span class="tag">'+esc(i)+'</span>';}).join('')+'</div></div>':'';
+    var horaH=c.horario?'<div class="card-hora"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>'+esc(c.horario)+'</span></div>':'';
+    var ctH='';
+    if(c.ct.text){ ctH=c.ct.link?'<a href="'+esc(c.ct.href)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(c.ct.text)+'</a>':'<span>'+esc(c.ct.text)+'</span>'; }
+    var llegH=c.hasMaps?'<a class="btn-llegar" href="'+esc(c.mapsUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cómo llegar<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></a>':'';
+    return '<article class="card" data-id="'+esc(c.id)+'" onclick="focusCard(this)"><div class="card-top"><span class="card-lugar">'+esc(c.lugar)+'</span>'+distH+'</div><h3 class="card-name">'+esc(c.nombre)+'</h3>'+dirH+itemsH+horaH+'<div class="card-footer"><div class="card-contacto">'+ctH+'</div>'+llegH+'</div></article>';
+  }).join('');
+
+  syncMarkers();
+}
+
+function initMap(){
+  if(map) return;
+  var L=window.L;
+  var el=window.innerWidth>=980?document.getElementById('map-el'):document.getElementById('mobile-map-el');
+  if(!el||!L||!L.markerClusterGroup) return;
+  map=L.map(el,{zoomControl:true,minZoom:2,maxBounds:[[-90,-180],[90,180]],maxBoundsViscosity:1});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom:19,subdomains:'abcd',noWrap:true
+  }).addTo(map);
+  cluster=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:55});
+  map.addLayer(cluster);
+  map.setView([8.2,-66.5],5);
+  syncMarkers();
+  fitMarkers();
+}
+
+function pinHtml(isVe){
+  var color=isVe?'#0A3D91':'#CF8B00';
+  return '<span style="display:block;width:22px;height:22px;border-radius:999px;background:'+color+';border:3px solid #fff;box-shadow:0 1px 5px rgba(10,20,40,.45)"></span>';
+}
+
+function popupHtml(c){
+  var h='<div style="min-width:180px;max-width:240px"><div style="font-weight:700;font-size:14px;line-height:1.3;color:#0D1320">'+esc(c.nombre||'Centro de acopio')+'</div>';
+  h+='<div style="font-size:12px;color:#56607A;margin-top:3px">'+esc(c.lugar)+'</div>';
+  if(c.direccion) h+='<div style="font-size:12px;color:#56607A;margin-top:4px">'+esc(c.direccion)+'</div>';
+  if(c.mapsUrl) h+='<a href="'+esc(c.mapsUrl)+'" target="_blank" rel="noopener" style="display:inline-flex;margin-top:9px;padding:6px 12px;border-radius:10px;background:#0A3D91;color:#fff;font-size:12px;font-weight:600;text-decoration:none">Cómo llegar</a>';
+  h+='</div>';
+  return h;
+}
+
+function syncMarkers(){
+  if(!cluster||!window.L) return;
+  var L=window.L;
+  cluster.clearLayers();
+  markersById={};
+  filtered.forEach(function(c){
+    if(!c.lat||!c.lng) return;
+    var m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',iconSize:[22,22],iconAnchor:[11,11],html:pinHtml(c.pais==='Venezuela')})});
+    m.bindPopup(popupHtml(c),{maxWidth:250});
+    cluster.addLayer(m);
+    markersById[c.id]=m;
+  });
+  if(userLoc){
+    if(window._userMarker) map.removeLayer(window._userMarker);
+    window._userMarker=L.marker([userLoc.lat,userLoc.lng],{icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="userdot" style="display:block;width:18px;height:18px;border-radius:999px;background:#0A3D91;border:3px solid #fff;animation:acopioPulse 2.2s infinite"></span>'})}).addTo(map);
   }
 }
+
+function fitMarkers(){
+  if(!map||!window.L) return;
+  var pts=filtered.filter(function(c){return c.lat&&c.lng;}).map(function(c){return[c.lat,c.lng];});
+  if(pts.length) map.fitBounds(pts,{padding:[50,50],maxZoom:13});
+}
+
+function focusCard(el){
+  var id=el.dataset.id;
+  var m=markersById[id];
+  if(m&&cluster&&cluster.zoomToShowLayer) cluster.zoomToShowLayer(m,function(){m.openPopup();});
+  else if(m){map.setView(m.getLatLng(),14);m.openPopup();}
+  if(window.innerWidth<980&&m){
+    document.getElementById('layout').className='layout show-map';
+    document.querySelectorAll('.view-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view==='mapa');});
+    setTimeout(function(){map&&map.invalidateSize();},70);
+  }
+}
+
+function updateTbH(){
+  var tb=document.getElementById('toolbar');
+  if(tb) document.documentElement.style.setProperty('--tb-h',Math.round(tb.getBoundingClientRect().height)+'px');
+}
+
+function onSearch(v){ st.query=v; renderCards(); }
+function setGroup(btn){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b===btn);});
+  st.group=btn.dataset.group; st.country='';
+  var sel=document.getElementById('country-sel');
+  sel.style.display=st.group==='internacional'?'block':'none';
+  sel.value='';
+  renderCards(); if(map) fitMarkers();
+}
+function onCountry(v){ st.country=v; renderCards(); if(map) fitMarkers(); }
+function clearFilters(){
+  document.getElementById('search').value='';
+  st={group:'todos',country:'',query:''};
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.group==='todos');});
+  document.getElementById('country-sel').style.display='none';
+  renderCards(); if(map) fitMarkers();
+}
+function setView(btn){
+  document.querySelectorAll('.view-btn').forEach(function(b){b.classList.toggle('active',b===btn);});
+  var v=btn.dataset.view;
+  document.getElementById('layout').className='layout show-'+v;
+  if(v==='mapa'){
+    if(!map) setTimeout(initMap,50);
+    else setTimeout(function(){map.invalidateSize();},70);
+  }
+}
+function locateMe(){
+  if(!navigator.geolocation) return;
+  document.getElementById('locate-lbl').textContent='Buscando…';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    userLoc={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    document.getElementById('locate-lbl').textContent='Cerca de ti';
+    if(map) map.setView([userLoc.lat,userLoc.lng],12);
+    renderCards();
+  },function(){
+    document.getElementById('locate-lbl').textContent='Cerca de mí';
+  },{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+}
+
+function openModal(){ document.getElementById('overlay').classList.add('open'); document.getElementById('submit-ok').style.display='none'; document.getElementById('modal-form').style.display=''; }
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+function closeModalBackdrop(e){ if(e.target===e.currentTarget) closeModal(); }
+function onSubmit(e){
+  e.preventDefault();
+  var f=e.target, err=document.getElementById('form-err'), btn=document.getElementById('btn-submit');
+  var data={};
+  (new FormData(f)).forEach(function(v,k){data[k]=v;});
+  if(!data.pais||!data.nombre||!data.ciudad){ err.textContent='Completa país, nombre y ciudad.'; err.style.display=''; return; }
+  err.style.display='none'; btn.disabled=true; btn.textContent='Enviando…';
+  fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(j&&j.ok){ document.getElementById('modal-form').style.display='none'; document.getElementById('submit-ok').style.display=''; }
+      else{ err.textContent=(j&&j.error)||'No se pudo enviar.'; err.style.display=''; btn.disabled=false; btn.textContent='Enviar propuesta'; }
+    })
+    .catch(function(){
+      document.getElementById('modal-form').style.display='none'; document.getElementById('submit-ok').style.display='';
+    });
+}
+
+function populateCountries(){
+  var seen={}, countries=[];
+  centers.forEach(function(c){ if(c.pais&&c.pais!=='Venezuela'&&!seen[c.pais]){seen[c.pais]=1;countries.push(c.pais);} });
+  countries.sort(function(a,b){return a.localeCompare(b);});
+  var sel=document.getElementById('country-sel');
+  sel.innerHTML='<option value="">Todos los países</option>'+countries.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join('');
+}
+
+function load(data){
+  centers=Array.isArray(data)?data:[];
+  populateCountries();
+  renderCards();
+}
+
+window.addEventListener('resize',function(){
+  updateTbH();
+  if(map) setTimeout(function(){map.invalidateSize();},60);
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+  updateTbH();
+  function tryMap(){ if(window.L&&window.L.markerClusterGroup) initMap(); else setTimeout(tryMap,130); }
+  tryMap();
+  fetch('/api/centers').then(function(r){return r.ok?r.json():null;}).then(function(data){
+    if(Array.isArray(data)&&data.length) load(data);
+  }).catch(function(){});
+});
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
